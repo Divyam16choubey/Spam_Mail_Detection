@@ -1,359 +1,188 @@
 # Naive Bayes Email Spam Classifier
 
+An academic machine learning project implementing a **Multinomial Naive Bayes Classifier** in Python to classify emails as **Spam (`1`)** or **Not Spam (`0`)**.
+
+---
+
 ## Project Overview
 
-This project implements a **Naive Bayes classifier from scratch in
-Python** for classifying emails into two categories:
+Spam email filtering is a fundamental natural language processing and binary classification task. This project explores the inner workings of probabilistic classification by building a Naive Bayes classifier without relying on high-level machine learning libraries such as `scikit-learn`.
 
--   **0 --- Not Spam**
--   **1 --- Spam**
+### Key Highlights
+- **From Scratch:** Zero machine learning libraries used for both model building and performance evaluation.
+- **Multinomial Feature Likelihoods:** Word frequency-based likelihood calculation tailored for bag-of-words text representations.
+- **Laplace Smoothing ($\alpha = 1$):** Handles unseen or zero-frequency vocabulary items without mathematical divergence.
+- **Log Probability Computation:** Prevents arithmetic underflow caused by multiplying thousands of small conditional probabilities.
+- **Manual Evaluation:** Custom implementations of Confusion Matrix (TP, TN, FP, FN), Accuracy, Precision, Recall, and F1 Score.
 
-The implementation is based on the `emails.csv` dataset provided for the
-assignment. The main goal is to understand and implement the Naive Bayes
-classification process manually without using a machine-learning library
-that provides the Naive Bayes algorithm.
+---
 
-## Dataset
+## Dataset Description
 
-The dataset is provided in the file:
+The dataset is stored in `emails/emails.csv` and contains word-frequency statistics extracted from a collection of emails.
 
-``` text
-emails.csv
-```
-
-According to the assignment:
-
--   Total emails: **5172**
--   Total columns: **3002**
--   First column: **Email No.**
--   Last column: **Prediction**
--   Feature columns: **3000**
--   `Prediction = 0`: Not Spam
--   `Prediction = 1`: Spam
-
-The 3000 feature columns represent the most common words in the emails.
-Each value represents the count of the corresponding word in that email.
+| Property | Value |
+| :--- | :--- |
+| **Total Emails (Samples)** | 5,172 |
+| **Total Columns** | 3,002 |
+| **Identifier Column** | `Email No.` (First column, excluded from features) |
+| **Feature Columns** | 3,000 common vocabulary word count attributes |
+| **Target Column** | `Prediction` (Last column: `0` = Not Spam, `1` = Spam) |
 
 ### Dataset Representation
 
-``` text
-Email No. | word_1 | word_2 | ... | word_3000 | Prediction
+```text
++-----------+--------+--------+-----+-----------+------------+
+| Email No. | word_1 | word_2 | ... | word_3000 | Prediction |
++-----------+--------+--------+-----+-----------+------------+
+|  Email 1  |   0    |   2    | ... |     1     |     0      |
+|  Email 2  |   8    |  13    | ... |     0     |     1      |
++-----------+--------+--------+-----+-----------+------------+
 ```
 
-For example, if a word has a value of `5` for an email, that word occurs
-five times in that email.
+---
 
-## Objective
+## Mathematical Formulation
 
-The objectives of this project are:
+### 1. Bayes' Theorem for Classification
 
-1.  Implement Naive Bayes classification from scratch.
-2.  Randomly select **4500 emails for training**.
-3.  Use the remaining **672 emails for testing**.
-4.  Calculate class prior probabilities manually.
-5.  Calculate feature likelihood probabilities manually.
-6.  Apply **Laplace smoothing** to handle zero probabilities.
-7.  Use **log probabilities** to improve numerical stability.
-8.  Predict whether test emails are spam or not spam.
-9.  Calculate:
-    -   Accuracy
-    -   Precision
-    -   Recall
-    -   F1 Score
+Given an email vector $\mathbf{x} = (x_1, x_2, \dots, x_n)$ where $x_i$ is the count of word $i$, the posterior probability for class $C_k \in \{\text{Spam}, \text{Not Spam}\}$ is:
 
-## Technologies Used
+$$P(C_k \mid \mathbf{x}) = \frac{P(C_k) \cdot P(\mathbf{x} \mid C_k)}{P(\mathbf{x})}$$
 
--   Python
--   Pandas
--   NumPy
--   Python `math` module
+Under the Naive Bayes conditional independence assumption:
 
-Pandas and NumPy are used only for basic data processing and numerical
-operations.
+$$P(\mathbf{x} \mid C_k) = \prod_{i=1}^{n} P(w_i \mid C_k)^{x_i}$$
 
-## Restrictions
+---
 
-The Naive Bayes algorithm must be implemented manually.
+### 2. Class Prior Probabilities
 
-The project does **not** use ready-made Naive Bayes implementations such
-as:
+Calculated directly from the distribution of classes in the training partition:
 
-``` python
-from sklearn.naive_bayes import MultinomialNB
-```
+$$P(\text{Spam}) = \frac{N_{\text{Spam}}}{N_{\text{Total}}}, \quad P(\text{Not Spam}) = \frac{N_{\text{Not Spam}}}{N_{\text{Total}}}$$
 
-The following are also not used for calculating the final evaluation
-metrics:
+---
 
-``` python
-accuracy_score()
-precision_score()
-recall_score()
-f1_score()
-```
+### 3. Feature Likelihood with Laplace Smoothing
 
-The classifier and evaluation calculations are implemented manually.
+To eliminate zero probabilities for words that do not appear in a specific class within the training split, **Add-1 (Laplace) Smoothing** is applied:
 
-## Naive Bayes
+$$P(w_i \mid C_k) = \frac{\sum_{j \in C_k} x_{ji} + \alpha}{\sum_{i=1}^{n} \sum_{j \in C_k} x_{ji} + \alpha \cdot |V|}$$
 
-Naive Bayes is a probabilistic classification algorithm based on Bayes'
-theorem.
+Where:
+- $\sum_{j \in C_k} x_{ji}$ = Total count of word $i$ in class $C_k$.
+- $\alpha = 1$ = Laplace smoothing parameter.
+- $|V| = 3000$ = Vocabulary size (number of feature words).
 
-For an email represented by its word features, the classifier calculates
-a score for each class:
+---
 
-``` text
-Spam
-Not Spam
-```
+### 4. Log-Probability Formulation
 
-The class with the higher probability score is selected as the
-prediction.
+Multiplying 3,000 fractional probabilities causes floating-point underflow. Taking the natural logarithm converts the product into a stable summation:
 
-The implementation uses two main types of probabilities.
+$$\ln P(C_k \mid \mathbf{x}) \propto \ln P(C_k) + \sum_{i=1}^{n} x_i \cdot \ln P(w_i \mid C_k)$$
 
-### Class Prior Probability
+The predicted class $\hat{y}$ is selected using the `argmax`:
 
-The prior probability represents the probability of a class before
-considering the word features.
+$$\hat{y} = \arg\max_{C_k} \left( \ln P(C_k) + \sum_{i=1}^{n} x_i \cdot \ln P(w_i \mid C_k) \right)$$
 
-For example:
-
-``` text
-P(Spam)     = Number of Spam training emails / Total training emails
-
-P(Not Spam) = Number of Not Spam training emails / Total training emails
-```
-
-### Feature Likelihood
-
-The likelihood represents how strongly each word feature is associated
-with a particular class.
-
-For every word feature, probabilities are calculated separately for:
-
-``` text
-Spam
-Not Spam
-```
-
-These probabilities are then used during prediction.
-
-## Laplace Smoothing
-
-A word may have zero occurrences in one of the classes in the training
-data.
-
-Without smoothing, this could produce a probability of zero. A zero
-probability can cause the complete probability calculation to become
-zero.
-
-To avoid this problem, Laplace smoothing is applied.
-
-The general idea is:
-
-``` text
-smoothed count = count + alpha
-```
-
-where `alpha` is the smoothing parameter.
-
-This prevents zero probabilities.
-
-## Log Probabilities
-
-The dataset contains 3000 word features. Directly multiplying many small
-probabilities can result in extremely small numbers and numerical
-underflow.
-
-Instead of calculating:
-
-``` text
-P1 × P2 × P3 × ... × Pn
-```
-
-the implementation uses logarithms:
-
-``` text
-log(P1) + log(P2) + log(P3) + ... + log(Pn)
-```
-
-This is mathematically equivalent for comparing the probabilities while
-being numerically more stable.
-
-The final prediction is based on the larger log-probability score.
-
-## Train-Test Split
-
-The dataset contains:
-
-``` text
-5172 emails
-```
-
-The required split is:
-
-``` text
-Training: 4500 emails
-Testing:   672 emails
-```
-
-The 4500 training emails are selected randomly, while the remaining 672
-emails are reserved for testing.
-
-The test data is not used while calculating the model parameters.
+---
 
 ## Project Workflow
 
-``` text
-                    emails.csv
-                        |
-                        v
-                  Load Dataset
-                        |
-                        v
-             Separate Features/Labels
-                        |
-                        v
-              Random Train/Test Split
-                   /            \
-                  /              \
-                 v                v
-        4500 Training        672 Testing
-                |
-                v
-        Calculate Class Priors
-                |
-                v
-      Calculate Feature Statistics
-                |
-                v
-         Apply Laplace Smoothing
-                |
-                v
-       Calculate Log Probabilities
-                |
-                v
-          Predict Test Emails
-                |
-                v
-       Compare Actual/Predicted
-                |
-                v
-       Calculate Evaluation Metrics
-                |
-                v
-     Accuracy / Precision / Recall / F1
+```text
+                      [ emails.csv ] (5172, 3002)
+                              │
+                              ▼
+                     [ Data Preprocessing ]
+               (Drop 'Email No.', Split X and y)
+                              │
+                              ▼
+                   [ Random Train/Test Split ]
+                  (Random Seed = 42 for parity)
+                     ┌────────┴────────┐
+                     ▼                 ▼
+             Training Set (4500)   Test Set (672)
+                     │                  │
+                     ▼                  │
+          [ Parameter Estimation ]      │
+          - Class Priors P(C)           │
+          - Smoothed Likelihoods        │
+          - Precompute Log Probabilities|
+                     │                  │
+                     └────────┬─────────┘
+                              ▼
+                    [ Vectorized Inference ]
+                    (Compute Log Posteriors)
+                              │
+                              ▼
+                 [ Confusion Matrix & Metrics ]
+                  - True Positives / Negatives
+                  - False Positives / Negatives
+                  - Accuracy, Precision, Recall, F1
 ```
+
+---
 
 ## Evaluation Metrics
 
-The classifier is evaluated using four metrics.
+The classifier is evaluated on the 672 unseen test samples using manual metric calculations:
 
-### Accuracy
+| Metric | Formula | Description |
+| :--- | :--- | :--- |
+| **Accuracy** | $\frac{TP + TN}{TP + TN + FP + FN}$ | Overall percentage of correct email classifications |
+| **Precision** | $\frac{TP}{TP + FP}$ | Proportion of predicted spam emails that are truly spam |
+| **Recall** | $\frac{TP}{TP + FN}$ | Proportion of actual spam emails that were caught |
+| **F1 Score** | $2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$ | Harmonic mean balancing Precision and Recall |
 
-Accuracy measures the percentage of correctly classified emails.
-
-``` text
-Accuracy = (TP + TN) / (TP + TN + FP + FN)
-```
-
-### Precision
-
-Precision measures how many emails predicted as spam are actually spam.
-
-``` text
-Precision = TP / (TP + FP)
-```
-
-### Recall
-
-Recall measures how many actual spam emails are correctly identified.
-
-``` text
-Recall = TP / (TP + FN)
-```
-
-### F1 Score
-
-F1 Score is the harmonic mean of precision and recall.
-
-``` text
-F1 = 2 × (Precision × Recall) / (Precision + Recall)
-```
-
-Where:
-
-``` text
-TP = True Positive
-TN = True Negative
-FP = False Positive
-FN = False Negative
-```
+---
 
 ## Project Structure
 
-``` text
-Naive-Bayes-Email-Classifier/
+```text
+Spam_Mail_Detection/
 │
-├── emails.csv
-├── naive_bayes.py
-└── README.md
+├── emails/
+│   └── emails.csv          # Dataset file containing 5,172 email word-count vectors
+│
+├── naive_bayes.py          # Complete Naive Bayes algorithm & evaluation from scratch
+│
+└── README.md               # Detailed academic project documentation
 ```
 
-### `emails.csv`
+---
 
-Contains the email dataset used for training and testing.
+## Requirements & Execution
 
-### `naive_bayes.py`
+### Prerequisites
+- Python 3.8+
+- `pandas` (for CSV reading and column manipulation)
+- `numpy` (for matrix and vector operations)
 
-Contains the complete Naive Bayes implementation from scratch.
+### 1. Installation
 
-### `README.md`
+Install the required dependencies:
 
-Contains information about the project, dataset, methodology,
-implementation approach, and evaluation.
+```bash
+pip install pandas numpy
+```
 
-## How to Run
+### 2. Running the Classifier
 
-1.  Ensure you have **Python 3** installed.
-2.  Install the required dependencies (`pandas` and `numpy`):
-    ```bash
-    pip install pandas numpy
-    ```
-3.  Execute the classifier script from the root directory of the project:
-    ```bash
-    python naive_bayes.py
-    ```
+Run the script from the workspace root directory:
 
-## Implementation Plan
+```bash
+python naive_bayes.py
+```
 
-The implementation will be completed in the following stages:
+---
 
-1.  Load `emails.csv`.
-2.  Verify the dataset dimensions and columns.
-3.  Separate the 3000 word-count features from the labels.
-4.  Randomly select 4500 emails for training.
-5.  Use the remaining 672 emails for testing.
-6.  Calculate the prior probability of each class.
-7.  Calculate word-frequency statistics for each class.
-8.  Apply Laplace smoothing.
-9.  Convert probabilities into log probabilities.
-10. Implement the prediction logic.
-11. Predict the labels of the 672 test emails.
-12. Calculate the confusion matrix values.
-13. Calculate accuracy.
-14. Calculate precision.
-15. Calculate recall.
-16. Calculate F1 score.
-17. Verify the results.
+## Experimental Results
 
-## Expected Output
+Execution of `naive_bayes.py` with a 4500 / 672 random split (Seed = 42) produces the following output:
 
-After the implementation is completed, the program will display results
-similar to:
-
-``` text
+```text
 Dataset Shape: (5172, 3002)
 
 Training Samples: 4500
@@ -361,34 +190,38 @@ Testing Samples: 672
 
 Spam Training Emails: 1301
 Not Spam Training Emails: 3199
+Prior Probability P(Spam): 0.2891 (28.91%)
+Prior Probability P(Not Spam): 0.7109 (71.09%)
 
-Accuracy: 0.9330
-Precision: 0.8532
-Recall: 0.9347
-F1 Score: 0.8921
+True Positives: 186
+True Negatives: 441
+False Positives: 32
+False Negatives: 13
+
+Accuracy: 0.9330 (93.30%)
+Precision: 0.8532 (85.32%)
+Recall: 0.9347 (93.47%)
+F1 Score: 0.8921 (89.21%)
 ```
 
-The actual values have been populated after the model was successfully implemented and tested.
+### Confusion Matrix Breakdown
 
-## Learning Outcomes
+```text
+                          Actual Spam (1)    Actual Not Spam (0)
+  Predicted Spam (1)         TP = 186             FP = 32
+  Predicted Not Spam (0)     FN = 13              TN = 441
+```
 
-This project is intended to provide practical understanding of:
+---
 
--   Bayes' theorem
--   Naive Bayes classification
--   Class prior probability
--   Feature likelihood
--   Word-frequency based classification
--   Laplace smoothing
--   Log probabilities
--   Numerical underflow
--   Binary classification
--   Confusion matrix
--   Accuracy
--   Precision
--   Recall
--   F1 Score
+## Discussion & Analysis
+
+1. **Handling Zero Probabilities:** Laplace smoothing prevents zero probability assignments for words not observed in a given class during training.
+2. **Numerical Stability:** Applying the log transform prevents arithmetic underflow during joint probability calculations across 3,000 features.
+3. **Classification Performance:** The model demonstrates a **93.47% Recall** on spam emails and an overall **Accuracy of 93.30%**, showing the effectiveness of the Multinomial Naive Bayes model on bag-of-words text data.
+
+---
 
 ## Author
 
-**Divyam Kumar Choubey**
+**Divyam Kumar Choubey**  
