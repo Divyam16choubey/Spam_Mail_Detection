@@ -9,7 +9,7 @@ import random
 data = pd.read_csv("emails/emails.csv")
 print(f"Dataset Shape: {data.shape}")
 
-# 2. Seperate & Split Data 
+# 2. Separate & Split Data 
 data = data.drop(columns=["Email No."])
 
 X = data.iloc[:, :-1].values
