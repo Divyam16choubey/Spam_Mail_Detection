@@ -4,32 +4,60 @@ An academic machine learning project implementing a **Multinomial Naive Bayes Cl
 
 ---
 
-## Project Overview
+## Quick Start (Run from Terminal)
 
-Spam email filtering is a fundamental natural language processing and binary classification task. This project explores the inner workings of probabilistic classification by building a Naive Bayes classifier without relying on high-level machine learning libraries such as `scikit-learn`.
+Ensure dependencies are installed and run the script directly from your terminal:
 
-### Key Highlights
-- **From Scratch:** Zero machine learning libraries used for both model building and performance evaluation.
-- **Multinomial Feature Likelihoods:** Word frequency-based likelihood calculation tailored for bag-of-words text representations.
-- **Laplace Smoothing ($\alpha = 1$):** Handles unseen or zero-frequency vocabulary items without mathematical divergence.
-- **Log Probability Computation:** Prevents arithmetic underflow caused by multiplying thousands of small conditional probabilities.
-- **Manual Evaluation:** Custom implementations of Confusion Matrix (TP, TN, FP, FN), Accuracy, Precision, Recall, and F1 Score.
+```bash
+# 1. Install dependencies
+pip install pandas numpy
+
+# 2. Run the classifier
+python naive_bayes.py
+```
 
 ---
 
-## Dataset Description
+## Project Overview & References
 
-The dataset is stored in `emails/emails.csv` and contains word-frequency statistics extracted from a collection of emails.
+This project fulfills the requirements defined in the assignment specification:
+- **Assignment Specification:** [Naive Bayes Email Classification.pdf](Naive%20Bayes%20Email%20Classification.pdf)
+- **Dataset File:** [emails/emails.csv](emails/emails.csv)
+
+The objective is to understand and manually implement the complete Naive Bayes mathematical classification workflow without using black-box machine learning libraries.
+
+---
+
+## Assignment Requirements & Conditions
+
+The project adheres strictly to the rules and constraints outlined in [Naive Bayes Email Classification.pdf](Naive%20Bayes%20Email%20Classification.pdf):
+
+| Condition / Rule | Assignment Requirement | Implementation in `naive_bayes.py` |
+| :--- | :--- | :--- |
+| **No ML Libraries** | Strict prohibition of `scikit-learn` or pre-built classifiers/metrics (zero-mark penalty). | Uses only `pandas`, `numpy`, `math`, and `random`. |
+| **Feature Column Selection** | Exclude `Email No.` (first column) from feature matrix. | Dropped via `data.drop(columns=["Email No."])`. |
+| **Dataset Partitioning** | Randomly split into exactly 4,500 training and 672 testing emails. | Randomly shuffled indices (Seed = 42) into 4,500 train and 672 test samples. |
+| **Prior Probabilities** | Manually compute class priors from training data. | $P(\text{Spam}) = \frac{N_{\text{Spam}}}{4500}$ and $P(\text{Not Spam}) = \frac{N_{\text{Not Spam}}}{4500}$. |
+| **Feature Likelihoods** | Calculate word likelihoods per class with Laplace smoothing. | Add-1 smoothing: $( \text{count} + 1 ) / ( \text{total words in class} + 3000 )$. |
+| **Numerical Stability** | Prevent floating-point underflow. | Logarithm transformation applied: $\ln P(C) + \sum x_i \ln P(w_i \mid C)$. |
+| **Manual Evaluation** | Calculate Confusion Matrix and evaluation metrics without library functions. | Manual calculation of TP, TN, FP, FN, Accuracy, Precision, Recall, and F1 Score. |
+
+---
+
+## Dataset Details
+
+The dataset [emails.csv](emails/emails.csv) represents emails pre-extracted into a word frequency (Bag of Words) format:
 
 | Property | Value |
 | :--- | :--- |
-| **Total Emails (Samples)** | 5,172 |
-| **Total Columns** | 3,002 |
-| **Identifier Column** | `Email No.` (First column, excluded from features) |
-| **Feature Columns** | 3,000 common vocabulary word count attributes |
-| **Target Column** | `Prediction` (Last column: `0` = Not Spam, `1` = Spam) |
+| **File Location** | `emails/emails.csv` |
+| **Total Samples (Rows)** | 5,172 emails |
+| **Total Columns** | 3,002 columns |
+| **Column 1 (`Email No.`)** | Unique string identifier (e.g., `Email 1`, `Email 2`) — excluded from modeling |
+| **Columns 2 to 3001** | Word occurrence counts for the 3,000 most common vocabulary terms |
+| **Column 3002 (`Prediction`)** | Target ground-truth label: `0` for Not Spam, `1` for Spam |
 
-### Dataset Representation
+### Data Representation Example
 
 ```text
 +-----------+--------+--------+-----+-----------+------------+
@@ -46,7 +74,7 @@ The dataset is stored in `emails/emails.csv` and contains word-frequency statist
 
 ### 1. Bayes' Theorem for Classification
 
-Given an email vector $\mathbf{x} = (x_1, x_2, \dots, x_n)$ where $x_i$ is the count of word $i$, the posterior probability for class $C_k \in \{\text{Spam}, \text{Not Spam}\}$ is:
+Given an email feature vector $\mathbf{x} = (x_1, x_2, \dots, x_n)$ where $x_i$ represents the count of word $i$, the posterior probability for class $C_k \in \{\text{Spam}, \text{Not Spam}\}$ is:
 
 $$P(C_k \mid \mathbf{x}) = \frac{P(C_k) \cdot P(\mathbf{x} \mid C_k)}{P(\mathbf{x})}$$
 
@@ -58,7 +86,7 @@ $$P(\mathbf{x} \mid C_k) = \prod_{i=1}^{n} P(w_i \mid C_k)^{x_i}$$
 
 ### 2. Class Prior Probabilities
 
-Calculated directly from the distribution of classes in the training partition:
+Calculated directly from the distribution of classes in the training set:
 
 $$P(\text{Spam}) = \frac{N_{\text{Spam}}}{N_{\text{Total}}}, \quad P(\text{Not Spam}) = \frac{N_{\text{Not Spam}}}{N_{\text{Total}}}$$
 
@@ -71,19 +99,19 @@ To eliminate zero probabilities for words that do not appear in a specific class
 $$P(w_i \mid C_k) = \frac{\sum_{j \in C_k} x_{ji} + \alpha}{\sum_{i=1}^{n} \sum_{j \in C_k} x_{ji} + \alpha \cdot |V|}$$
 
 Where:
-- $\sum_{j \in C_k} x_{ji}$ = Total count of word $i$ in class $C_k$.
+- $\sum_{j \in C_k} x_{ji}$ = Total occurrences of word $i$ in class $C_k$.
 - $\alpha = 1$ = Laplace smoothing parameter.
-- $|V| = 3000$ = Vocabulary size (number of feature words).
+- $|V| = 3000$ = Total number of vocabulary features.
 
 ---
 
 ### 4. Log-Probability Formulation
 
-Multiplying 3,000 fractional probabilities causes floating-point underflow. Taking the natural logarithm converts the product into a stable summation:
+Multiplying 3,000 fractional probabilities causes arithmetic underflow. Converting the product into log space yields a stable summation:
 
 $$\ln P(C_k \mid \mathbf{x}) \propto \ln P(C_k) + \sum_{i=1}^{n} x_i \cdot \ln P(w_i \mid C_k)$$
 
-The predicted class $\hat{y}$ is selected using the `argmax`:
+The predicted class $\hat{y}$ is selected via `argmax`:
 
 $$\hat{y} = \arg\max_{C_k} \left( \ln P(C_k) + \sum_{i=1}^{n} x_i \cdot \ln P(w_i \mid C_k) \right)$$
 
@@ -109,7 +137,7 @@ $$\hat{y} = \arg\max_{C_k} \left( \ln P(C_k) + \sum_{i=1}^{n} x_i \cdot \ln P(w_
           [ Parameter Estimation ]      │
           - Class Priors P(C)           │
           - Smoothed Likelihoods        │
-          - Precompute Log Probabilities|
+          - Precompute Log Probabilities│
                      │                  │
                      └────────┬─────────┘
                               ▼
@@ -127,13 +155,13 @@ $$\hat{y} = \arg\max_{C_k} \left( \ln P(C_k) + \sum_{i=1}^{n} x_i \cdot \ln P(w_
 
 ## Evaluation Metrics
 
-The classifier is evaluated on the 672 unseen test samples using manual metric calculations:
+The classifier is evaluated on the 672 test samples using custom metric calculations:
 
 | Metric | Formula | Description |
 | :--- | :--- | :--- |
 | **Accuracy** | $\frac{TP + TN}{TP + TN + FP + FN}$ | Overall percentage of correct email classifications |
 | **Precision** | $\frac{TP}{TP + FP}$ | Proportion of predicted spam emails that are truly spam |
-| **Recall** | $\frac{TP}{TP + FN}$ | Proportion of actual spam emails that were caught |
+| **Recall** | $\frac{TP}{TP + FN}$ | Proportion of actual spam emails correctly identified |
 | **F1 Score** | $2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$ | Harmonic mean balancing Precision and Recall |
 
 ---
@@ -144,43 +172,20 @@ The classifier is evaluated on the 672 unseen test samples using manual metric c
 Spam_Mail_Detection/
 │
 ├── emails/
-│   └── emails.csv          # Dataset file containing 5,172 email word-count vectors
+│   └── emails.csv                      # Email dataset (5,172 samples x 3,002 columns)
 │
-├── naive_bayes.py          # Complete Naive Bayes algorithm & evaluation from scratch
+├── Naive Bayes Email Classification.pdf # Assignment specification document
 │
-└── README.md               # Detailed academic project documentation
-```
-
----
-
-## Requirements & Execution
-
-### Prerequisites
-- Python 3.8+
-- `pandas` (for CSV reading and column manipulation)
-- `numpy` (for matrix and vector operations)
-
-### 1. Installation
-
-Install the required dependencies:
-
-```bash
-pip install pandas numpy
-```
-
-### 2. Running the Classifier
-
-Run the script from the workspace root directory:
-
-```bash
-python naive_bayes.py
+├── naive_bayes.py                      # Complete Naive Bayes implementation from scratch
+│
+└── README.md                           # Project documentation and results
 ```
 
 ---
 
 ## Experimental Results
 
-Execution of `naive_bayes.py` with a 4500 / 672 random split (Seed = 42) produces the following output:
+Running `python naive_bayes.py` in the terminal outputs:
 
 ```text
 Dataset Shape: (5172, 3002)
@@ -216,12 +221,12 @@ F1 Score: 0.8921 (89.21%)
 
 ## Discussion & Analysis
 
-1. **Handling Zero Probabilities:** Laplace smoothing prevents zero probability assignments for words not observed in a given class during training.
-2. **Numerical Stability:** Applying the log transform prevents arithmetic underflow during joint probability calculations across 3,000 features.
-3. **Classification Performance:** The model demonstrates a **93.47% Recall** on spam emails and an overall **Accuracy of 93.30%**, showing the effectiveness of the Multinomial Naive Bayes model on bag-of-words text data.
+1. **Handling Zero Probabilities:** Laplace smoothing ($\alpha = 1$) prevents unseen words from causing a zero product probability.
+2. **Numerical Stability:** Using log probabilities completely mitigates floating-point underflow across 3,000 features.
+3. **Classification Performance:** The model attains an **Accuracy of 93.30%** and a **Recall of 93.47%**, demonstrating that the from-scratch Multinomial Naive Bayes classifier is highly effective at identifying spam emails.
 
 ---
 
 ## Author
 
-**Divyam Kumar Choubey**  
+**Divyam Kumar Choubey**
