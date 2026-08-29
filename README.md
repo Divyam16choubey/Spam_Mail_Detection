@@ -314,6 +314,18 @@ Contains the complete Naive Bayes implementation from scratch.
 Contains information about the project, dataset, methodology,
 implementation approach, and evaluation.
 
+## How to Run
+
+1.  Ensure you have **Python 3** installed.
+2.  Install the required dependencies (`pandas` and `numpy`):
+    ```bash
+    pip install pandas numpy
+    ```
+3.  Execute the classifier script from the root directory of the project:
+    ```bash
+    python naive_bayes.py
+    ```
+
 ## Implementation Plan
 
 The implementation will be completed in the following stages:
@@ -347,17 +359,16 @@ Dataset Shape: (5172, 3002)
 Training Samples: 4500
 Testing Samples: 672
 
-Spam Training Emails: ...
-Not Spam Training Emails: ...
+Spam Training Emails: 1301
+Not Spam Training Emails: 3199
 
-Accuracy: ...
-Precision: ...
-Recall: ...
-F1 Score: ...
+Accuracy: 0.9330
+Precision: 0.8532
+Recall: 0.9347
+F1 Score: 0.8921
 ```
 
-The actual values will be added after the model has been implemented and
-tested.
+The actual values have been populated after the model was successfully implemented and tested.
 
 ## Learning Outcomes
 
