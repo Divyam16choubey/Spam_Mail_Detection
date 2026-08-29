@@ -1,4 +1,4 @@
-# Acadmic Project :- Naive Bayes Email Spam Classifier
+# Academic Project :- Naive Bayes Email Spam Classifier
 
 import pandas as pd
 import numpy as np
