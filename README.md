@@ -392,5 +392,3 @@ This project is intended to provide practical understanding of:
 ## Author
 
 **Divyam Kumar Choubey**
-
-Computer Science and Engineering
