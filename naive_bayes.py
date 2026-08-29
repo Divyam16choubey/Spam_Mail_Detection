@@ -60,6 +60,9 @@ print(f"Not Spam Training Emails: {n_not_spam}")
 prior_spam     = n_spam / train_size
 prior_not_spam = n_not_spam / train_size
 
+print(f"Prior Probability P(Spam): {prior_spam:.4f} ({prior_spam*100:.2f}%)")
+print(f"Prior Probability P(Not Spam): {prior_not_spam:.4f} ({prior_not_spam*100:.2f}%)")
+
 # ------------------- 5. Calculate Feature Likelihoods ------------------------
 alpha = 1
 
